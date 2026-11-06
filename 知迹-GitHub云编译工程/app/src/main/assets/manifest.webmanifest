@@ -1,0 +1,20 @@
+{
+  "name": "知迹 · 学习任务",
+  "short_name": "知迹",
+  "description": "DeepSeek 学习计划、目标成就树、任务大地图、学习速度监控、专注计时与 3500 词。",
+  "lang": "zh-CN",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#07101a",
+  "theme_color": "#07101a",
+  "icons": [
+    {
+      "src": "icon.svg",
+      "sizes": "any",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

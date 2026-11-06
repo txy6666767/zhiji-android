@@ -1,0 +1,859 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+    <meta name="theme-color" content="#07101a" />
+    <meta name="description" content="以目标为起点，用 AI 制定高考计划，配合月度题库、打印训练、专注计时和复习提醒。" />
+    <link rel="manifest" href="manifest.webmanifest" />
+    <link rel="icon" href="icon.svg" type="image/svg+xml" />
+    <link rel="stylesheet" href="styles.css" />
+    <title>知迹 · 高考计划与题库</title>
+  </head>
+  <body>
+    <div class="app-shell">
+      <header class="topbar">
+        <button class="brand" type="button" data-page-jump="plan" aria-label="返回学习计划">
+          <span class="brand-mark"><i></i><i></i><i></i></span>
+          <span>
+            <strong>知迹</strong>
+            <small>目标 · 计划 · 训练</small>
+          </span>
+        </button>
+        <div class="top-actions">
+          <div class="goal-mini" id="goalMini" hidden>
+            <span>目标</span>
+            <strong id="goalMiniValue">--</strong>
+          </div>
+          <button class="icon-button" id="dataButton" type="button" aria-label="数据与设置">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M12 8.2a3.8 3.8 0 1 0 0 7.6 3.8 3.8 0 0 0 0-7.6Zm8.5 3.8c0-.6-.1-1.1-.2-1.6l2-1.5-2-3.5-2.3.9c-.8-.6-1.7-1-2.6-1.3L15 2.8h-4L10.7 5c-1 .3-1.8.7-2.6 1.3l-2.3-.9-2 3.5 2 1.5a7.8 7.8 0 0 0 0 3.2l-2 1.5 2 3.5 2.3-.9c.8.6 1.7 1 2.6 1.3l.3 2.2h4l.3-2.2c1-.3 1.8-.7 2.6-1.3l2.3.9 2-3.5-2-1.5c.1-.5.2-1 .2-1.6Z" />
+            </svg>
+          </button>
+        </div>
+      </header>
+
+      <main>
+        <section class="page is-active" id="page-plan" data-page="plan">
+          <div class="page-title">
+            <div>
+              <p class="eyebrow">GOAL FIRST</p>
+              <h1>先明确目标，<br /><span>再让 AI 排计划。</span></h1>
+              <p>计划会根据剩余时间、学科优先级、任务完成速度和真实投入持续更新。</p>
+            </div>
+            <button class="word-mini" id="openWordbook" type="button">
+              <span>3500 词</span>
+              <strong id="wordMiniProgress">0 / 3500</strong>
+            </button>
+          </div>
+
+          <section class="setup-card" id="planSetup">
+            <div class="setup-heading">
+              <div>
+                <span class="step-number">01</span>
+                <h2>设定本次备考目标</h2>
+                <p>填写一次即可。后续每次更新 AI 计划时，会继续使用这些目标。</p>
+              </div>
+              <span class="ai-required" id="aiRequiredBadge">需配置 AI</span>
+            </div>
+
+            <div class="ai-connect-note" id="aiConnectNote">
+              <div>
+                <strong>先生成计划，再开始刷题</strong>
+                <p>建议先配置可用的 AI 接口。计划生成后，题库、专注和进度都会围绕同一目标联动。</p>
+              </div>
+              <button class="text-button" type="button" data-page-jump="ai">去配置 AI</button>
+            </div>
+
+            <form id="goalForm" class="goal-form">
+              <label class="field">
+                <span>高考日期</span>
+                <input id="goalExamDate" type="date" required />
+              </label>
+              <label class="field">
+                <span>目标总分</span>
+                <div class="input-with-unit">
+                  <input id="goalTargetScore" type="number" min="100" max="750" step="1" required />
+                  <i>分</i>
+                </div>
+              </label>
+              <label class="field">
+                <span>当前估分</span>
+                <div class="input-with-unit">
+                  <input id="goalCurrentScore" type="number" min="0" max="750" step="1" required />
+                  <i>分</i>
+                </div>
+              </label>
+              <label class="field">
+                <span>每日可学时间</span>
+                <div class="input-with-unit">
+                  <input id="goalDailyMinutes" type="number" min="30" max="720" step="15" required />
+                  <i>分钟</i>
+                </div>
+              </label>
+              <label class="field">
+                <span>每周学习天数</span>
+                <div class="input-with-unit">
+                  <input id="goalStudyDays" type="number" min="1" max="7" step="1" required />
+                  <i>天</i>
+                </div>
+              </label>
+              <label class="field">
+                <span>单次专注时长</span>
+                <div class="input-with-unit">
+                  <input id="goalFocusMinutes" type="number" min="10" max="90" step="5" required />
+                  <i>分钟</i>
+                </div>
+              </label>
+              <div class="field field-wide">
+                <span>薄弱学科</span>
+                <div class="choice-grid" id="weakSubjects"></div>
+              </div>
+              <div class="field field-wide">
+                <span>参与计划与优先级</span>
+                <div class="priority-list" id="subjectPriorityList"></div>
+                <small>未勾选的学科不会进入计划；用上下箭头调整 AI 安排任务的优先级。</small>
+              </div>
+              <label class="field field-wide">
+                <span>补充目标（可选）</span>
+                <textarea id="goalNote" rows="3" placeholder="例如：数学函数和英语阅读较弱；想在 3 个月内把数学稳定到 110 分。"></textarea>
+              </label>
+
+              <details class="subject-goal-details field-wide">
+                <summary>细化学科目标 <span>推荐填写，AI 会按各科提分空间排序</span></summary>
+                <div class="subject-goal-grid" id="subjectGoalGrid"></div>
+              </details>
+            </form>
+
+            <div class="setup-actions">
+              <button class="button primary" id="generatePlanButton" type="button">
+                <span class="spark">✦</span>
+                AI 生成并开始执行
+              </button>
+              <button class="button ghost" id="localPlanButton" type="button">先生成本地示例计划</button>
+            </div>
+            <p class="fine-print">AI 计划用于安排学习节奏，不构成成绩保证；执行中应结合学校作业和老师要求调整。</p>
+          </section>
+
+          <section class="plan-dashboard" id="planDashboard" hidden>
+            <article class="goal-card">
+              <div class="goal-card-main">
+                <p class="eyebrow">CURRENT GOAL</p>
+                <h2><span id="currentScoreText">--</span><i>→</i><strong id="targetScoreText">--</strong></h2>
+                <p id="goalDeadlineText">距离高考 -- 天</p>
+              </div>
+              <div class="goal-progress">
+                <div><span>计划执行进度</span><strong id="goalProgressText">0%</strong></div>
+                <div class="track"><i id="goalProgressFill"></i></div>
+              </div>
+              <button class="text-button" id="editGoalButton" type="button">调整目标</button>
+            </article>
+
+            <div class="speed-strip">
+              <div><span>今日学习</span><strong id="speedTodayMinutes">0 分钟</strong><small id="speedTodayPercent">目标 0%</small></div>
+              <div><span>实际 / 预计</span><strong id="speedRatio">--</strong><small id="speedRatioLabel">暂无完成记录</small></div>
+              <div><span>任务完成</span><strong id="speedTaskPercent">0%</strong><small id="speedTaskCount">0 / 0</small></div>
+              <div><span>计划目标预测</span><strong id="speedGoalEta">待计算</strong><small>按近期真实速度</small></div>
+            </div>
+
+            <div class="achievement-tree" id="goalTree"></div>
+
+            <div class="plan-layout">
+              <article class="card plan-card">
+                <div class="card-head">
+                  <div>
+                    <p class="eyebrow">AI STUDY PLAN</p>
+                    <h2 id="planTitle">本周学习计划</h2>
+                  </div>
+                  <div class="plan-source">
+                    <span id="planSourceBadge">本地计划</span>
+                    <small id="planUpdatedText">刚刚更新</small>
+                  </div>
+                </div>
+                <div class="plan-tools">
+                  <button class="text-button" id="openTaskMapButton" type="button">打开任务大地图</button>
+                  <span>可拖动任务、手工连线、让 AI 重排</span>
+                </div>
+                <p class="plan-summary" id="planSummary"></p>
+                <div class="day-tabs" id="planDayTabs"></div>
+                <div class="day-plan-head">
+                  <div>
+                    <strong id="activeDayTitle">今天</strong>
+                    <small id="activeDayMeta">--</small>
+                  </div>
+                  <span id="activeDayMinutes">0 分钟</span>
+                </div>
+                <div class="task-list" id="taskList"></div>
+                <div class="plan-progress-row">
+                  <span>计划完成度</span>
+                  <div class="track"><i id="planProgressFill"></i></div>
+                  <strong id="planProgressText">0 / 0</strong>
+                </div>
+              </article>
+
+              <aside class="plan-side">
+                <article class="card status-card">
+                  <p class="eyebrow">LIVE STATUS</p>
+                  <h3 id="liveStatusTitle">计划刚开始</h3>
+                  <p id="liveStatusText">完成今天的任务后，这里会判断你的执行节奏。</p>
+                  <div class="status-stats">
+                    <div><span>今日完成</span><strong id="todayTaskStat">0 / 0</strong></div>
+                    <div><span>本周作答</span><strong id="weekMasteredStat">0 次</strong></div>
+                  </div>
+                </article>
+
+                <article class="card next-action-card">
+                  <span class="card-icon">↗</span>
+                  <h3>计划需要变化时</h3>
+                  <p>完成几项任务后，让 AI 根据实际执行情况重新安排，避免计划与现实脱节。</p>
+                  <button class="button secondary full" id="updatePlanButton" type="button">让 AI 更新计划</button>
+                </article>
+
+                <article class="card review-card">
+                  <div class="card-head compact-head">
+                    <h3>未完成任务</h3>
+                    <span class="count-badge" id="dueCountBadge">0</span>
+                  </div>
+                  <div id="planDueList" class="due-list"></div>
+                </article>
+              </aside>
+            </div>
+          </section>
+        </section>
+
+        <section class="page" id="page-bank" data-page="bank">
+          <div class="page-title compact-title">
+            <div>
+              <p class="eyebrow">MONTHLY QUESTION BANK</p>
+              <h1>题库，<br /><span>每月更新一次。</span></h1>
+              <p>按目标筛选题目，点开后再显示答案；勾选后可生成纸质练习或打印成 PDF。</p>
+            </div>
+            <div class="month-badge">
+              <span>当前题包</span>
+              <strong id="currentPackLabel">2026.11</strong>
+            </div>
+          </div>
+
+          <article class="bank-summary">
+            <div>
+              <span>本月题量</span>
+              <strong id="packQuestionCount">0</strong>
+              <small id="packUpdateText">更新周期：每月一次</small>
+            </div>
+            <div>
+              <span>稳定掌握</span>
+              <strong id="packMasteredCount">0</strong>
+              <small>经过延迟复测的题目</small>
+            </div>
+            <div class="bank-summary-actions">
+              <button class="button secondary small" id="generateQuestionsButton" type="button">AI 生成本月题</button>
+              <button class="text-button" id="importQuestionsButton" type="button">导入题包</button>
+              <input id="questionFileInput" type="file" accept=".json" hidden />
+            </div>
+          </article>
+
+          <div class="filter-panel">
+            <div class="filter-row">
+              <label>
+                <span>题包月份</span>
+                <select id="packFilter"></select>
+              </label>
+              <label>
+                <span>学科</span>
+                <select id="subjectFilter">
+                  <option value="all">全部学科</option>
+                </select>
+              </label>
+              <label>
+                <span>难度</span>
+                <select id="difficultyFilter">
+                  <option value="all">全部难度</option>
+                  <option value="基础">基础</option>
+                  <option value="中档">中档</option>
+                  <option value="提升">提升</option>
+                </select>
+              </label>
+              <label>
+                <span>题型</span>
+                <select id="typeFilter">
+                  <option value="all">全部题型</option>
+                </select>
+              </label>
+            </div>
+            <div class="search-row">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10.5 3a7.5 7.5 0 1 0 4.6 13.4l4.2 4.2 1.4-1.4-4.2-4.2A7.5 7.5 0 0 0 10.5 3Zm0 2a5.5 5.5 0 1 1 0 11 5.5 5.5 0 0 1 0-11Z" /></svg>
+              <input id="questionSearch" type="search" placeholder="搜索考点、题干或标签" />
+            </div>
+          </div>
+
+          <div class="selection-toolbar">
+            <div>
+              <strong>已选 <span id="selectedCount">0</span> 题</strong>
+              <button class="text-button" id="selectVisibleButton" type="button">全选当前结果</button>
+              <button class="text-button" id="clearSelectionButton" type="button">清空选择</button>
+            </div>
+            <div class="selection-actions">
+              <button class="button ghost small" id="aiPickButton" type="button"><span class="spark">✦</span> AI 帮我选题</button>
+              <button class="button secondary small" id="startQuizButton" type="button">限时训练</button>
+              <button class="button primary small" id="printButton" type="button">打印选题</button>
+            </div>
+          </div>
+
+          <div class="question-list" id="questionList"></div>
+          <div class="load-more-wrap">
+            <button class="text-button" id="loadMoreButton" type="button">显示更多题目</button>
+          </div>
+        </section>
+
+        <section class="page" id="page-focus" data-page="focus">
+          <div class="page-title compact-title">
+            <div>
+              <p class="eyebrow">FOCUS SESSION</p>
+              <h1>专注，<br /><span>只做眼前一件事。</span></h1>
+              <p>计时结束后自动记录到总览；离开页面也会根据结束时间继续计算。</p>
+            </div>
+            <div class="today-focus">
+              <strong id="focusTodayMinutes">0</strong>
+              <span>分钟今日</span>
+            </div>
+          </div>
+
+          <div class="focus-layout">
+            <article class="card focus-card">
+              <div class="segmented" id="timerModes">
+                <button class="is-active" type="button" data-minutes="25">25 分钟</button>
+                <button type="button" data-minutes="45">45 分钟</button>
+                <button type="button" data-minutes="60">60 分钟</button>
+              </div>
+              <div class="timer-wrap">
+                <svg class="timer-ring" viewBox="0 0 240 240" aria-hidden="true">
+                  <circle class="timer-track" cx="120" cy="120" r="106"></circle>
+                  <circle class="timer-value" id="timerProgress" cx="120" cy="120" r="106"></circle>
+                </svg>
+                <div class="timer-content">
+                  <span id="timerState">准备专注</span>
+                  <strong id="timerDisplay">25:00</strong>
+                  <small id="timerSubjectText">数学 · 专项训练</small>
+                </div>
+              </div>
+              <label class="focus-subject">
+                <span>本次学科</span>
+                <select id="timerSubject"></select>
+              </label>
+              <label class="focus-subject">
+                <span>当前在做</span>
+                <select id="timerTask"></select>
+              </label>
+              <div class="timer-buttons">
+                <button class="button primary large" id="timerToggle" type="button">开始专注</button>
+                <button class="button ghost" id="timerReset" type="button">重置</button>
+              </div>
+            </article>
+
+            <aside class="focus-side">
+              <div class="stat-grid">
+                <article class="stat-card"><span>今日专注</span><strong id="focusTodayStat">0</strong><small>分钟</small></article>
+                <article class="stat-card"><span>本周专注</span><strong id="focusWeekStat">0</strong><small>小时</small></article>
+                <article class="stat-card"><span>完成次数</span><strong id="focusCountStat">0</strong><small>次</small></article>
+                <article class="stat-card"><span>连续天数</span><strong id="focusStreakStat">0</strong><small>天</small></article>
+              </div>
+              <article class="card history-card">
+                <div class="card-head compact-head"><h3>最近专注</h3><span>本地记录</span></div>
+                <div id="focusHistory" class="focus-history"></div>
+              </article>
+            </aside>
+          </div>
+        </section>
+
+        <section class="page" id="page-ai" data-page="ai">
+          <div class="page-title compact-title">
+            <div>
+              <p class="eyebrow">PERSONAL AI</p>
+              <h1>配置一次，<br /><span>让 AI 认识目标。</span></h1>
+              <p>支持兼容 chat/completions 格式的个人 AI 接口。密钥只保存在本机。</p>
+            </div>
+            <span class="connection-badge" id="aiConnectionBadge">未配置</span>
+          </div>
+
+          <div class="ai-layout">
+            <article class="card config-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">AI CONNECTION</p>
+                  <h2>接口配置</h2>
+                </div>
+              </div>
+              <label class="field">
+                <span>AI 模式</span>
+                <select id="aiProvider">
+                  <option value="deepseek">DeepSeek 直连（推荐）</option>
+                  <option value="custom">自定义兼容接口</option>
+                </select>
+                <small>配置一次，计划、任务图、答疑、单词全部共用。</small>
+              </label>
+              <label class="field">
+                <span>完整接口地址</span>
+                <input id="aiEndpoint" type="url" autocomplete="off" placeholder="https://服务商/v1/chat/completions" />
+                <small>必须填写完整的 chat/completions 地址。</small>
+              </label>
+              <label class="field">
+                <span>模型名称</span>
+                <input id="aiModel" type="text" autocomplete="off" placeholder="服务商提供的模型 ID" />
+              </label>
+              <label class="field">
+                <span>API 密钥</span>
+                <input id="aiKey" type="password" autocomplete="off" placeholder="仅保存在当前设备" />
+              </label>
+              <div class="deepseek-account">
+                <div class="account-head">
+                  <div><span>DeepSeek 剩余额度</span><strong id="deepseekBalance">未查询</strong></div>
+                  <button class="button ghost small" id="refreshBalanceButton" type="button">检测余额</button>
+                </div>
+                <div class="account-meta">
+                  <span>应用累计 <b id="usedTokens">0</b> tokens</span>
+                  <span>上次请求 <b id="lastRequestTokens">0</b></span>
+                  <span>估算可用 <b id="estimatedTokens">--</b></span>
+                </div>
+                <div class="account-actions">
+                  <label>估算单价 <input id="tokenPrice" type="number" min="0.1" step="0.1" value="2" /> 元/百万 tokens</label>
+                  <button class="text-button" id="rechargeButton" type="button">去 DeepSeek 充值</button>
+                </div>
+                <p id="balanceHelp">余额从 DeepSeek 账户接口读取；Token 数为按单价估算。</p>
+              </div>
+              <div class="config-actions">
+                <button class="button primary" id="saveAiButton" type="button">保存 AI 配置</button>
+                <button class="text-button danger" id="clearAiButton" type="button">清除</button>
+              </div>
+              <p class="config-warning">浏览器直连可能受到服务商跨域策略限制。若接口不允许网页调用，需要后端代理或安卓原生封装。</p>
+            </article>
+
+            <article class="card chat-card">
+              <div class="card-head">
+                <div>
+                  <p class="eyebrow">ASK & ADJUST</p>
+                  <h2>学习助手</h2>
+                </div>
+                <button class="text-button" id="aiPlanUpdateShortcut" type="button">更新学习计划</button>
+              </div>
+              <div class="chat-messages" id="chatMessages" aria-live="polite">
+                <div class="message assistant">
+                  <span class="message-label">AI</span>
+                  <div>
+                    <p>配置接口后，我可以结合你的目标、题库完成度和专注记录，生成或更新学习计划，也可以回答具体题目。</p>
+                    <small>只有你主动发送时，必要的进度摘要才会发送给所选 AI 服务商。</small>
+                  </div>
+                </div>
+              </div>
+              <form class="chat-form" id="chatForm">
+                <div class="attachment-preview" id="attachmentPreview"></div>
+                <textarea id="chatInput" rows="2" placeholder="例如：帮我解释这道导数题，或调整今晚计划"></textarea>
+                <div class="composer-tools">
+                  <button class="composer-tool" id="voiceInputButton" type="button" aria-label="语音输入">声</button>
+                  <button class="composer-tool" id="attachButton" type="button" aria-label="添加图片或文件">＋</button>
+                  <input id="chatAttachmentInput" type="file" accept="image/*,.pdf,.txt,.md,.csv,.json" multiple hidden />
+                  <button class="send-button" type="submit" aria-label="发送">
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m3 20 18-8L3 4v6l12 2-12 2v6Z" /></svg>
+                  </button>
+                </div>
+              </form>
+            </article>
+          </div>
+          <div class="ai-support-grid">
+            <article class="card notification-settings">
+              <div>
+                <p class="eyebrow">DAILY CHECK-IN</p>
+                <h3>任务提醒</h3>
+                <p>每天 20:00 和 23:00 检查未完成任务。网页版需保持后台运行；安卓原生封装可锁屏提醒。</p>
+              </div>
+              <button class="button secondary small" id="enableNotificationsButton" type="button">开启通知</button>
+            </article>
+            <article class="card deepseek-sync-note">
+              <p class="eyebrow">DEEPSEEK MODE</p>
+              <h3>全局 AI 配置</h3>
+              <p>应用内统一通过 DeepSeek API 运行。Codex 当前会话不能直接成为 App 的在线接口，需要在 App 内填写可访问的 DeepSeek API 或代理地址。</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="page" id="page-overview" data-page="overview">
+          <div class="page-title compact-title">
+            <div>
+              <p class="eyebrow">PROGRESS</p>
+              <h1>看清进度，<br /><span>再判断学习节奏。</span></h1>
+              <p>根据计划完成率、题目掌握、专注时长与复习情况判断当前节奏。</p>
+            </div>
+          </div>
+
+          <article class="overview-hero" id="overviewHero">
+            <div>
+              <p class="eyebrow">CURRENT SIGNAL</p>
+              <h2 id="overviewStatusTitle">先完成今天的第一项任务</h2>
+              <p id="overviewStatusText">建立几天记录后，才能判断计划是否跟得上。</p>
+            </div>
+            <div class="overview-score">
+              <strong id="overviewCompletion">0%</strong>
+              <span>计划完成</span>
+            </div>
+          </article>
+
+          <article class="card forecast-card">
+            <div class="card-head compact-head">
+              <div>
+                <p class="eyebrow">TIME FORECAST</p>
+                <h3>目标预测</h3>
+              </div>
+              <span>按真实学习速度计算</span>
+            </div>
+            <div class="forecast-main">
+              <div><span>按当前速度预计完成目标</span><strong id="forecastOverallDate">待积累数据</strong><small id="forecastOverallDetail">完成几项任务后生成</small></div>
+              <div class="forecast-ring" id="forecastRing"><strong id="forecastOverallPercent">--</strong><span>当前进度</span></div>
+            </div>
+            <div class="subject-forecast" id="subjectForecast"></div>
+          </article>
+
+          <div class="overview-grid">
+            <article class="card metric-card">
+              <span>目标</span>
+              <strong id="overviewGoal">未设置</strong>
+              <small id="overviewDays">--</small>
+            </article>
+            <article class="card metric-card">
+              <span>学习速度</span>
+              <strong id="overviewMastered">--</strong>
+              <small id="overviewMasteryRate">暂无时长</small>
+            </article>
+            <article class="card metric-card">
+              <span>累计专注</span>
+              <strong id="overviewFocus">0h</strong>
+              <small id="overviewFocusWeek">本周 0h</small>
+            </article>
+            <article class="card metric-card">
+              <span>未完成任务</span>
+              <strong id="overviewDue">0</strong>
+              <small id="overviewDueHint">含昨日结转</small>
+            </article>
+          </div>
+
+          <div class="overview-bottom">
+            <article class="card">
+              <div class="card-head compact-head"><h3>近七天执行</h3><span id="overviewWeekText">0 天有记录</span></div>
+              <div class="week-chart" id="weekChart"></div>
+            </article>
+            <article class="card">
+              <div class="card-head compact-head"><h3>学科任务进度</h3><span id="overviewMasteryTotal">0 / 0</span></div>
+              <div class="subject-bars" id="subjectBars"></div>
+            </article>
+          </div>
+
+          <article class="card quality-card">
+            <div class="card-head compact-head"><h3>学习质量</h3><span>比完成任务数量更重要</span></div>
+            <div class="quality-grid">
+              <div><span>计划完成率</span><strong id="qualityAccuracy">--</strong></div>
+              <div><span>实际 / 预计</span><strong id="qualityRetention">--</strong></div>
+              <div><span>近 7 天日均</span><strong id="qualityPace">--</strong></div>
+              <div><span>昨日未完成</span><strong id="qualityError">--</strong></div>
+            </div>
+          </article>
+        </section>
+      </main>
+
+      <nav class="bottom-nav" aria-label="主导航">
+        <button class="nav-item is-active" type="button" data-page-jump="plan">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h14v16H5V4Zm3 4h8V6H8v2Zm0 4h8v-2H8v2Zm0 4h5v-2H8v2Z" /></svg>
+          <span>计划</span>
+        </button>
+        <button class="nav-item" type="button" data-page-jump="ai">
+          <span class="ai-nav-mark">AI</span>
+          <span>助手</span>
+        </button>
+        <button class="nav-item" type="button" data-open-wordbook>
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h11a3 3 0 0 1 3 3v13H8a3 3 0 0 1-3-3V4Zm3 3v2h8V7H8Zm0 5v2h8v-2H8Z" /></svg>
+          <span>单词</span>
+        </button>
+        <button class="nav-item" type="button" data-page-jump="focus">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2a10 10 0 1 0 0 20 10 10 0 0 0 0-20Zm1 5v5.4l3.7 2.1-1 1.7-4.7-2.7V7h2Z" /></svg>
+          <span>专注</span>
+        </button>
+        <button class="nav-item" type="button" data-page-jump="overview">
+          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 20V10h4v10H4Zm6 0V4h4v16h-4Zm6 0v-7h4v7h-4Z" /></svg>
+          <span>总览</span>
+        </button>
+      </nav>
+    </div>
+
+    <section class="sheet" id="questionSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel question-panel" role="dialog" aria-modal="true" aria-labelledby="questionTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow" id="questionMeta">题库</p>
+            <h2 id="questionTitle">题目</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="question-detail-tags" id="questionTags"></div>
+        <div class="question-stem" id="questionStem"></div>
+        <div class="question-options" id="questionOptions"></div>
+        <textarea class="answer-input" id="subjectiveAnswer" rows="4" placeholder="在这里写下你的答案或关键步骤"></textarea>
+        <div class="attempt-actions" id="attemptActions">
+          <button class="button primary" id="submitAnswerButton" type="button">提交答案</button>
+          <button class="button ghost" id="revealAnswerButton" type="button">不会，直接看解析</button>
+        </div>
+        <div class="attempt-feedback" id="attemptFeedback" hidden></div>
+        <div class="self-grade-panel" id="selfGradePanel" hidden>
+          <span>主观题请对照答案自评：</span>
+          <button class="button ghost small" type="button" data-self-grade="incorrect">需要订正</button>
+          <button class="button secondary small" type="button" data-self-grade="correct">基本答对</button>
+        </div>
+        <div class="error-reason-panel" id="errorReasonPanel" hidden>
+          <strong>这次主要错在哪里？</strong>
+          <div class="error-reasons">
+            <button type="button" data-error-type="知识没记住">知识没记住</button>
+            <button type="button" data-error-type="概念理解错误">概念理解错误</button>
+            <button type="button" data-error-type="方法不会">方法不会</button>
+            <button type="button" data-error-type="审题错误">审题错误</button>
+            <button type="button" data-error-type="计算错误">计算错误</button>
+            <button type="button" data-error-type="时间不足">时间不足</button>
+            <button type="button" data-error-type="表达不规范">表达不规范</button>
+          </div>
+        </div>
+        <section class="answer-panel" id="answerPanel" hidden>
+          <p class="eyebrow">ANSWER</p>
+          <div class="answer-value" id="answerValue"></div>
+          <h3>解析</h3>
+          <p id="answerExplanation"></p>
+          <p class="review-hint" id="reviewHint"></p>
+        </section>
+        <div class="question-detail-actions">
+          <button class="button ghost" id="addCurrentToPrint" type="button">加入打印</button>
+          <button class="button secondary" id="variantQuestionButton" type="button">同考点换一题</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="sheet" id="printSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel compact-panel" role="dialog" aria-modal="true" aria-labelledby="printTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">PRINT PAPER</p>
+            <h2 id="printTitle">打印选题</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <label class="field">
+          <span>试卷标题</span>
+          <input id="printPaperTitle" type="text" />
+        </label>
+        <label class="switch-row">
+          <span><strong>附答案与解析</strong><small>答案另起一页，方便家长或自己批改。</small></span>
+          <input id="printWithAnswers" type="checkbox" />
+        </label>
+        <p class="print-note">手机浏览器会打开系统打印界面，可选择打印机或“另存为 PDF”。</p>
+        <button class="button primary full" id="confirmPrintButton" type="button">打开打印界面</button>
+      </div>
+    </section>
+
+    <section class="sheet" id="aiPickSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel compact-panel" role="dialog" aria-modal="true" aria-labelledby="aiPickTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">AI SELECTION</p>
+            <h2 id="aiPickTitle">让 AI 根据需求选题</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <label class="field">
+          <span>选题要求</span>
+          <textarea id="aiPickInput" rows="4">请从本月题库中选择 10 道适合我当前阶段的题目，优先薄弱学科和基础、中档题，并兼顾复习。</textarea>
+        </label>
+        <button class="button primary full" id="confirmAiPickButton" type="button"><span class="spark">✦</span> 开始选题</button>
+      </div>
+    </section>
+
+    <section class="sheet" id="quizSetupSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel compact-panel" role="dialog" aria-modal="true" aria-labelledby="quizSetupTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">TIMED PRACTICE</p>
+            <h2 id="quizSetupTitle">开始限时训练</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="empty-note" id="quizSetupSummary">请先选题。</div>
+        <label class="field">
+          <span>训练时间</span>
+          <select id="quizDuration">
+            <option value="15">15 分钟</option>
+            <option value="30" selected>30 分钟</option>
+            <option value="45">45 分钟</option>
+            <option value="60">60 分钟</option>
+          </select>
+        </label>
+        <p class="print-note">训练中不显示答案。交卷后自动统计选择题正确率，并提示逐题订正。</p>
+        <button class="button primary full" id="confirmStartQuiz" type="button">开始训练</button>
+      </div>
+    </section>
+
+    <section class="sheet" id="dataSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel compact-panel" role="dialog" aria-modal="true" aria-labelledby="dataTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">LOCAL DATA</p>
+            <h2 id="dataTitle">数据与设置</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="data-actions">
+          <button class="button ghost" id="exportBackupButton" type="button">导出完整备份</button>
+          <label class="button ghost file-button">
+            导入备份
+            <input id="importBackupInput" type="file" accept=".json" hidden />
+          </label>
+          <button class="button ghost" id="exportCalendarButton" type="button">导出复习日历</button>
+        </div>
+        <div class="data-description">
+          <p>目标、计划、题库选择、掌握状态和专注记录均保存在当前设备。清除浏览器网站数据会删除这些内容。</p>
+        </div>
+        <button class="text-button danger reset-button" id="resetProgressButton" type="button">清空学习记录</button>
+      </div>
+    </section>
+
+    <section class="sheet" id="completeTaskSheet" aria-hidden="true">
+      <div class="sheet-backdrop" data-close-sheet></div>
+      <div class="sheet-panel compact-panel" role="dialog" aria-modal="true" aria-labelledby="completeTaskTitle">
+        <div class="sheet-handle"></div>
+        <div class="sheet-header">
+          <div>
+            <p class="eyebrow">COMPLETE TASK</p>
+            <h2 id="completeTaskTitle">完成任务</h2>
+          </div>
+          <button class="icon-button" data-close-sheet type="button" aria-label="关闭">×</button>
+        </div>
+        <div class="completion-task-summary">
+          <span>预计用时</span>
+          <strong id="completeTaskEstimate">-- 分钟</strong>
+          <p>是否记录实际用时？AI 只根据实际用时和预计用时判断快慢，不会用主观印象代替数据。</p>
+        </div>
+        <div class="completion-existing" id="completionExistingEvaluation" hidden></div>
+        <label class="field">
+          <span>实际用时（可选）</span>
+          <div class="input-with-unit"><input id="actualMinutesInput" type="number" min="1" max="600" step="1" placeholder="不填写也可以完成" /><i>分钟</i></div>
+        </label>
+        <div class="completion-actions">
+          <button class="button ghost" id="completeWithoutTimeButton" type="button">不填时长，直接完成</button>
+          <button class="button primary" id="completeWithTimeButton" type="button">保存并评估速度</button>
+        </div>
+        <p class="fine-print">客观规则：实际用时 ≤ 预计 80% 为“快”；80%—120% 为“正常”；超过 120% 为“偏慢”。AI 只能在此基础上解释原因。</p>
+      </div>
+    </section>
+
+    <section class="task-map-view" id="taskMapView" aria-hidden="true">
+      <header class="task-map-header">
+        <button class="icon-button" id="closeTaskMapButton" type="button" aria-label="关闭任务地图">←</button>
+        <div>
+          <p class="eyebrow">TASK WORLD</p>
+          <h1>任务大地图</h1>
+        </div>
+        <button class="button secondary small" id="taskMapAiButton" type="button">AI 调整</button>
+      </header>
+      <div class="task-map-toolbar">
+        <button class="filter-pill" id="taskConnectModeButton" type="button">连线模式</button>
+        <span id="taskConnectHint">拖动卡片改变位置；打开连线模式后依次选择“下一步”。</span>
+      </div>
+      <div class="task-map-scroll" id="taskMapScroll">
+        <div class="task-map-canvas" id="taskMapCanvas">
+          <svg class="task-map-lines" id="taskMapEdges" aria-hidden="true"></svg>
+          <div id="taskMapNodes"></div>
+        </div>
+      </div>
+      <div class="task-inspector" id="taskInspector">
+        <span>选择一个任务卡查看详情</span>
+      </div>
+      <div class="task-map-ai-panel" id="taskMapAiPanel" hidden>
+        <div class="card-head compact-head"><h3>让 AI 修改任务图</h3><button class="icon-button small" id="closeTaskMapAi" type="button" aria-label="关闭">×</button></div>
+        <textarea id="taskMapAiInput" rows="3" placeholder="例如：把数学任务改成 30 分钟，把英语阅读放到函数任务之后"></textarea>
+        <button class="button primary small" id="runTaskMapAiButton" type="button">生成修改方案</button>
+        <div class="task-map-ai-result" id="taskMapAiResult" hidden></div>
+      </div>
+    </section>
+
+    <section class="wordbook-view" id="wordbookView" aria-hidden="true">
+      <div class="wordbook-inner">
+        <header class="wordbook-header">
+          <button class="icon-button" id="closeWordbook" type="button" aria-label="返回">←</button>
+          <div>
+            <p class="eyebrow">VOCABULARY</p>
+            <h1>3500 词记忆</h1>
+          </div>
+          <button class="text-button" id="importWordsButton" type="button">导入词表</button>
+          <input id="wordFileInput" type="file" accept=".csv,.txt" hidden />
+        </header>
+        <div class="word-progress-card">
+          <div><span>目标</span><strong>3500</strong></div>
+          <div>
+            <span>当前词库与掌握</span>
+            <strong id="wordbankCount">0 个</strong>
+            <div class="track"><i id="wordProgressFill"></i></div>
+            <small id="wordMasteredText">已掌握 0 个</small>
+          </div>
+        </div>
+        <article class="word-card">
+          <span class="word-status" id="wordStatus">待学习</span>
+          <h2 id="wordText">word</h2>
+          <button class="meaning-button" id="revealMeaning" type="button">点击查看释义</button>
+          <p class="word-meaning" id="wordMeaning" hidden></p>
+          <p class="word-sentence" id="wordSentence"></p>
+          <div class="word-buttons">
+            <button class="button ghost" type="button" data-word-result="again">再记一次</button>
+            <button class="button secondary" type="button" data-word-result="hard">有点模糊</button>
+            <button class="button primary" type="button" data-word-result="known">认识</button>
+          </div>
+        </article>
+        <p class="fine-print">CSV 格式：<code>word,中文释义,例句</code>。内置词表是核心种子词，可通过导入或 AI 分批补全。</p>
+        <button class="button secondary full" id="aiWordsButton" type="button">AI 补充一批单词</button>
+      </div>
+    </section>
+
+    <section class="quiz-view" id="quizView" aria-hidden="true">
+      <div class="quiz-shell">
+        <header class="quiz-header">
+          <button class="icon-button" id="exitQuizButton" type="button" aria-label="退出训练">×</button>
+          <div>
+            <p class="eyebrow">TIMED PRACTICE</p>
+            <strong id="quizTimer">30:00</strong>
+          </div>
+          <span id="quizProgressText">1 / 10</span>
+        </header>
+        <div class="quiz-progress"><span id="quizProgressFill"></span></div>
+        <article class="quiz-question-card">
+          <div class="question-card-top" id="quizTags"></div>
+          <h1 id="quizStem"></h1>
+          <div class="question-options quiz-options" id="quizOptions"></div>
+          <textarea class="answer-input" id="quizSubjective" rows="6" placeholder="写下答案或关键步骤"></textarea>
+          <div class="quiz-question-actions">
+            <button class="button ghost" id="quizPreviousButton" type="button">上一题</button>
+            <button class="button primary" id="quizNextButton" type="button">下一题</button>
+          </div>
+        </article>
+        <button class="button secondary full" id="submitQuizButton" type="button">提前交卷</button>
+        <section class="quiz-result" id="quizResult" hidden></section>
+      </div>
+    </section>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <section class="print-area" id="printArea" aria-hidden="true"></section>
+
+    <script src="data.js"></script>
+    <script src="question-data.js"></script>
+    <script src="app.js"></script>
+  </body>
+</html>
